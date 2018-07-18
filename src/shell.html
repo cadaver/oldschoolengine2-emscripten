@@ -4,6 +4,13 @@
   <canvas id="canvas" width=640 height=400></canvas><br>
   <textarea class="emscripten" id="output" rows="6" style="width: 100%"></textarea>
   <script type='text/javascript'>
+    window.addEventListener("keydown", function(e) {
+        // space, arrows & ctrl
+        if([32, 37, 38, 39, 40, 17].indexOf(e.keyCode) > -1) {
+            e.preventDefault();
+        }
+    }, false);
+
     var consoleElement = document.getElementById('output');
     consoleElement.value = '';
 
