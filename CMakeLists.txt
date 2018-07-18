@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(OldschoolEngine2)
+project(oldschoolengine2)
 
 set(CMAKE_CXX_STANDARD 11)
 add_definitions(-Wall -Wcast-qual -Wextra -Wshadow -fno-exceptions -fno-rtti -pedantic -flto -m64)
@@ -19,8 +19,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 set(CMAKE_EXE_LINKER_FLAGS "${linkFlagsDebug} ${linkFlags}")
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${linkFlagsDebug} ${linkFlags}")
 
-add_executable(OldschoolEngine2 ${sourceFiles} ${headerFiles})
+add_executable(oldschoolengine2 ${sourceFiles} ${headerFiles})
 
-set_target_properties(OldschoolEngine2 PROPERTIES LINK_FLAGS_DEBUG "${linkFlagsDebug} ${linkFlags}")
-set_target_properties(OldschoolEngine2 PROPERTIES LINK_FLAGS_RELEASE "${linkFlags}")
+set_target_properties(oldschoolengine2 PROPERTIES LINK_FLAGS_DEBUG "${linkFlagsDebug} ${linkFlags}")
+set_target_properties(oldschoolengine2 PROPERTIES LINK_FLAGS_RELEASE "${linkFlags}")
 

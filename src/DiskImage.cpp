@@ -53,7 +53,6 @@ void FileHandle::Close()
         // When a file written to is closed, begin sync to persistent file system
         EM_ASM(
             FS.syncfs(false, function(err) {
-                assert(!err);
             });
         );
     }

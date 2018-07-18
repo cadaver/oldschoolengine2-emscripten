@@ -40,8 +40,9 @@ int main(int argc, char** argv)
         FS.mkdir('/savedata');
         FS.mount(IDBFS,{},'/savedata');
         FS.syncfs(true, function(err) {
-            assert(!err);
-            Module.print('Savefiles initialized');
+            if (!err) {
+                Module.print('Savefiles initialized');
+            }
         });
     );
 
