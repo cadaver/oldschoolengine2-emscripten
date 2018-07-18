@@ -22,5 +22,9 @@
 
 #pragma once
 
-void InitScreen();
-void UpdateScreen(unsigned* data);
+class Screen
+{
+public:
+    static void Init();
+    static void Redraw(unsigned* data);
+};

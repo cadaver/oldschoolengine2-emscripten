@@ -37,14 +37,15 @@ enum DiskType
 class FileHandle
 {
 public:
+    FileHandle();
+    bool IsOpen() const;
+    void Close();
+
     int track;
     int sector;
     int offset;
     FILE* reader;
     FILE* writer;
-
-    bool Open() { return reader != nullptr || writer != nullptr || track != 0; }
-    void Close();
 };
 
 class DiskImage

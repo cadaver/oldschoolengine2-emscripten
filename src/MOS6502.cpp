@@ -28,8 +28,15 @@
 
 MOS6502::MOS6502(RAM64K& ram, Emulator& emulator) :
     _ram(ram),
-    _emulator(emulator)
+    _emulator(emulator),
+    _sp(0xff),
+    _nmi(false),
+    _irq(false),
+    _reset(false),
+    _jam(false),
+    _cycles(0)
 {
+    SetStatus(0);
     Reset();
 }
 

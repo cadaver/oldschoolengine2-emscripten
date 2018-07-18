@@ -37,6 +37,8 @@ public:
     void Reset();
     void Process();
     void SetCycles(int value) { _cycles = value; }
+    void SetA(unsigned char value) { _a = value; }
+    unsigned short PC() const { return _pc; }
     unsigned char A() const { return _a; }
     unsigned char X() const { return _x; }
     unsigned char Y() const { return _y; }

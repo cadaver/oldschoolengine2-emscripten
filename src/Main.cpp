@@ -21,17 +21,21 @@
 // SOFTWARE.
 
 #include <emscripten.h>
+#include <emscripten/html5.h>
 
 #include "Emulator.h"
 
 Emulator emulator;
 
 void DoFrame();
+EM_BOOL KeyCallback(int eventType, const EmscriptenKeyboardEvent *e, void *userData);
 
 int main()
 {
     emulator.Start();
     emscripten_set_main_loop(DoFrame, 0, 0);
+    emscripten_set_keydown_callback(0, 0, 1, KeyCallback);
+    emscripten_set_keyup_callback(0, 0, 1, KeyCallback);
 }
 
 void DoFrame()
@@ -39,3 +43,11 @@ void DoFrame()
     emulator.Update();
 }
 
+EM_BOOL KeyCallback(int eventType, const EmscriptenKeyboardEvent *e, void *userData)
+{
+    if (eventType == EMSCRIPTEN_EVENT_KEYDOWN)
+        emulator.HandleKey(e->keyCode, true);
+    else if (eventType == EMSCRIPTEN_EVENT_KEYUP)
+        emulator.HandleKey(e->keyCode, false);
+    return 0;
+}

@@ -12,8 +12,7 @@ file(GLOB_RECURSE headerFiles ./src/*.h)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".html")
 
-set(linkFlags "-s DISABLE_EXCEPTION_CATCHING=1 -s TOTAL_MEMORY=64MB --shell-file ${CMAKE_CURRENT_LIST_DIR}/src/shell.html -s WASM=1")
-set(linkFlags "${linkFlags} -s DISABLE_EXCEPTION_CATCHING=1 -s TOTAL_MEMORY=64MB")
+set(linkFlags "-s DISABLE_EXCEPTION_CATCHING=1 -s TOTAL_MEMORY=64MB --shell-file ${CMAKE_CURRENT_LIST_DIR}/src/shell.html -s WASM=1 --preload-file diskimages")
 
 set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")

@@ -25,6 +25,7 @@
 #include <GLES2/gl2.h>
 #include <emscripten.h>
 #include <emscripten/html5.h>
+#include "Screen.h"
 
 EMSCRIPTEN_WEBGL_CONTEXT_HANDLE glContext;
 GLuint quadBuffer;
@@ -72,7 +73,7 @@ GLuint CreateVertexBuffer(int size, const float* data)
     return buffer;
 }
 
-void InitScreen()
+void Screen::Init()
 {
     EmscriptenWebGLContextAttributes attrs;
     emscripten_webgl_init_context_attributes(&attrs);
@@ -111,7 +112,7 @@ void InitScreen()
     quadBuffer = CreateVertexBuffer(8, quadBufferData);
 }
 
-void UpdateScreen(unsigned* screenData)
+void Screen::Redraw(unsigned* screenData)
 {
     glBindTexture(GL_TEXTURE_2D, screenTexture);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 320, 200, GL_RGBA, GL_UNSIGNED_BYTE, screenData);

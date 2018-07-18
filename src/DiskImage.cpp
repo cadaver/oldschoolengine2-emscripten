@@ -23,6 +23,20 @@
 #include <stdio.h>
 #include "DiskImage.h"
 
+FileHandle::FileHandle() :
+    track(0),
+    sector(0),
+    offset(0),
+    reader(nullptr),
+    writer(nullptr)
+{
+}
+
+bool FileHandle::IsOpen() const
+{
+    return track != 0 || reader != nullptr || writer != nullptr;
+}
+
 void FileHandle::Close()
 {
     if (reader)
@@ -35,6 +49,7 @@ void FileHandle::Close()
         fclose(writer);
         writer = nullptr;
     }
+    track = 0;
 }
 
 int DiskImage::_d64SectorsPerTrack[] = {
@@ -46,7 +61,25 @@ int DiskImage::_d64SectorsPerTrack[] = {
 
 DiskImage::DiskImage(const std::string& name)
 {
-    _type = D64;
+    std::string imagePath = "diskimages/" + name;
+
+    FILE* imageFile = fopen(imagePath.c_str(), "rb");
+    if (imageFile)
+    {
+        fseek(imageFile, 0, SEEK_END);
+        int length = ftell(imageFile);
+        _data.resize(length);
+        fseek(imageFile, 0, SEEK_SET);
+        fread(&_data[0], length, 1, imageFile);
+        fclose(imageFile);
+
+        _name = name;
+        _type = length == 174848 ? D64 : D81;
+        printf("Opened disk image %s, length %d\n", name.c_str(), length);
+    }
+    else
+        printf("Failed to open disk image %s\n", name.c_str());
+
     MakeSectorTable();
 }
 
@@ -57,11 +90,25 @@ int DiskImage::GetSectorOffset(int track, int sector)
 
 FileHandle DiskImage::OpenFileForWrite(const std::vector<unsigned char>& fileName)
 {
-    return FileHandle();
+    // TODO persist saves
+    FILE* saveFile = fopen(GetSaveFileName(fileName).c_str(), "wb");
+    FileHandle ret;
+    ret.writer = saveFile;
+
+    return ret;
 }
 
 FileHandle DiskImage::OpenFile(const std::vector<unsigned char>& fileName)
 {
+    // Check for savefile
+    FILE* saveFile = fopen(GetSaveFileName(fileName).c_str(), "rb");
+    if (saveFile)
+    {
+        FileHandle ret;
+        ret.reader = saveFile;
+        return ret;
+    }
+
     int dirTrack = (_type == D64) ? 18 : 40;
     int dirSector = (_type == D64) ? 1 : 3;
 
@@ -75,15 +122,12 @@ FileHandle DiskImage::OpenFile(const std::vector<unsigned char>& fileName)
                 bool match = true;
 
                 // If no filename specified, open any file
-                if (fileName.size() == 0)
+                for (unsigned e = 0; e < fileName.size(); ++e)
                 {
-                    for (int e = 0; e < fileName.size(); ++e)
+                    if (_data[offset + d + 3 + e] != fileName[e])
                     {
-                        if (_data[offset + d + 3 + e] != fileName[e])
-                        {
-                            match = false;
-                            break;
-                        }
+                        match = false;
+                        break;
                     }
                 }
 
@@ -108,13 +152,18 @@ FileHandle DiskImage::OpenFile(const std::vector<unsigned char>& fileName)
 
 unsigned char DiskImage::ReadByte(FileHandle& handle)
 {
-    if (!handle.Open())
+    if (!handle.IsOpen())
         return 0;
 
     unsigned char ret;
 
     if (handle.reader)
     {
+        ret = fgetc(handle.reader);
+        // Need to know EOF in advance
+        if (feof(handle.reader))
+            handle.Close();
+        return ret;
     }
 
     int sectorStart = GetSectorOffset(handle.track, handle.sector);
@@ -146,13 +195,15 @@ unsigned char DiskImage::ReadByte(FileHandle& handle)
 void DiskImage::WriteByte(FileHandle& handle, unsigned char value)
 {
     if (handle.writer)
-    {
-    }
+        fputc(value, handle.writer);
 }
 
 std::string DiskImage::GetSaveFileName(const std::vector<unsigned char>& fileName)
 {
-    return "";
+    std::string filePath = _name;
+    for (unsigned i = 0; i < fileName.size(); ++i)
+        filePath += (char)fileName[i];
+    return filePath;
 }
 
 void DiskImage::MakeSectorTable()
