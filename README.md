@@ -14,10 +14,8 @@ Features:
 - Line-based VIC-II rendering
 - Raster interrupts. No actual CIA chip emulation
 - Joystick port 2 control with arrows + ctrl as fire button
-- Keyboard input of most C64 keys
-- Virtual joystick on touch enabled devices (left side = direction, right side = fire)
+- Keyboard input
 - D64 & D81 image support, loading / saving via minimal (and incorrect) Kernal routine traps
-- Save file persistence
 
 TODO:
 
