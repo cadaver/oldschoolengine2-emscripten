@@ -31,13 +31,16 @@
 
 std::string diskImageName = "steelrangerdemo";
 
-Emulator::Emulator() :
+Emulator::Emulator(const std::string& imageName) :
     _ram(nullptr),
     _processor(nullptr),
     _vic2(nullptr),
     _sid(nullptr),
     _disk(nullptr)
 {
+    if (imageName.length())
+        diskImageName = imageName;
+
     _ram = new RAM64K(*this);
     _processor = new MOS6502(*_ram, *this);
     _vic2 = new VIC2(*_ram);
@@ -50,6 +53,11 @@ Emulator::Emulator() :
     _keyMappings[32] = 60;
     _keyMappings[188] = 47;
     _keyMappings[190] = 44;
+    
+    Screen::Init();
+    Audio::Init(3);
+    InitMemory();
+    BootGame();
 }
 
 Emulator::~Emulator()
@@ -58,14 +66,6 @@ Emulator::~Emulator()
     delete _ram;
     delete _vic2;
     delete _sid;
-}
-
-void Emulator::Start()
-{
-    Screen::Init();
-    Audio::Init(3);
-    InitMemory();
-    BootGame();
 }
 
 void Emulator::Update()

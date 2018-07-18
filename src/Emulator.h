@@ -34,10 +34,9 @@ class SID;
 class Emulator
 {
 public:
-    Emulator();
+    Emulator(const std::string& imageName);
     ~Emulator();
 
-    void Start();
     void Update();
     void QueueAudio();
 

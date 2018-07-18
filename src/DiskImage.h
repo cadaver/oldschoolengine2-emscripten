@@ -66,6 +66,6 @@ private:
 
     std::string _name;
     DiskType _type;
-    int _sectorOffsets[MAX_TRACK][MAX_SECTOR];
+    int _sectorOffsets[MAX_TRACK+1][MAX_SECTOR];
     std::vector<unsigned char> _data;
 };
