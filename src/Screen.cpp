@@ -57,8 +57,8 @@ GLuint CreateTexture()
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     return texture;
@@ -96,7 +96,7 @@ void Screen::Init()
         "uniform sampler2D tex;"
         "varying vec2 uv;"
         "void main(){"
-            "gl_FragColor = texture2D(tex,uv);"
+            "gl_FragColor = fract(uv.y * 200.0) >= 0.5 ? texture2D(tex,uv) : texture2D(tex,uv) * 0.5;"
         "}";
     GLuint fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
 
