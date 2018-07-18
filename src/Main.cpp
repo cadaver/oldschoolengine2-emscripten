@@ -22,7 +22,6 @@
 
 #include <emscripten.h>
 #include <emscripten/html5.h>
-
 #include "Emulator.h"
 
 const double frameTime = 1000.0 / 50.0;
@@ -36,6 +35,16 @@ EM_BOOL KeyCallback(int eventType, const EmscriptenKeyboardEvent *e, void *userD
 
 int main()
 {
+    // Load old saves
+    EM_ASM(
+        FS.mkdir('/savedata');
+        FS.mount(IDBFS,{},'/savedata');
+        FS.syncfs(true, function(err) {
+            assert(!err);
+            Module.print('Savefiles initialized');
+        });
+    );
+
     emulator.Start();
     emscripten_set_main_loop(FrameCallback, 0, 0);
     emscripten_set_keydown_callback(0, 0, 1, KeyCallback);

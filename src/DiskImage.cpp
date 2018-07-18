@@ -21,6 +21,7 @@
 // SOFTWARE.
 
 #include <stdio.h>
+#include <emscripten.h>
 #include "DiskImage.h"
 
 FileHandle::FileHandle() :
@@ -48,6 +49,13 @@ void FileHandle::Close()
     {
         fclose(writer);
         writer = nullptr;
+
+        // When a file written to is closed, begin sync to persistent file system
+        EM_ASM(
+            FS.syncfs(false, function(err) {
+                assert(!err);
+            });
+        );
     }
     track = 0;
 }
@@ -200,7 +208,7 @@ void DiskImage::WriteByte(FileHandle& handle, unsigned char value)
 
 std::string DiskImage::GetSaveFileName(const std::vector<unsigned char>& fileName)
 {
-    std::string filePath = _name;
+    std::string filePath = "/savedata/" + _name;
     for (unsigned i = 0; i < fileName.size(); ++i)
         filePath += (char)fileName[i];
     return filePath;

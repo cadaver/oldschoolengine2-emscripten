@@ -16,11 +16,11 @@ Features:
 - Joystick port 2 control with arrows + ctrl as fire button
 - Keyboard input
 - D64 & D81 image support, loading / saving via minimal (and incorrect) Kernal routine traps
+- Save file persistence
 
 TODO:
 
 - Full key mappings
-- Persistent save of files written to the disk image (save games)
 
 Licensed under the MIT license, see the code for details. Use at own risk.
 
