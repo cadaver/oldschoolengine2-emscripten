@@ -44,6 +44,7 @@ public:
     int track;
     int sector;
     int offset;
+    int length;
     FILE* reader;
     FILE* writer;
 };

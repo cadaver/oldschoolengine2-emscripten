@@ -28,6 +28,7 @@ FileHandle::FileHandle() :
     track(0),
     sector(0),
     offset(0),
+    length(0),
     reader(nullptr),
     writer(nullptr)
 {
@@ -82,7 +83,7 @@ DiskImage::DiskImage(const std::string& name)
 
         _name = name;
         _type = length == 174848 ? D64 : D81;
-        printf("Opened disk image %s, length %d\n", name.c_str(), length);
+        printf("Opened disk image %s, size %d\n", name.c_str(), length);
     }
     else
         printf("Failed to open disk image %s\n", name.c_str());
@@ -113,6 +114,9 @@ FileHandle DiskImage::OpenFile(const std::vector<unsigned char>& fileName)
     {
         FileHandle ret;
         ret.reader = saveFile;
+        fseek(saveFile, 0, SEEK_END);
+        ret.length = ftell(saveFile);
+        fseek(saveFile, 0, SEEK_SET);
         return ret;
     }
 
@@ -168,7 +172,7 @@ unsigned char DiskImage::ReadByte(FileHandle& handle)
     {
         ret = fgetc(handle.reader);
         // Need to know EOF in advance
-        if (feof(handle.reader))
+        if (ftell(handle.reader) >= handle.length)
             handle.Close();
         return ret;
     }
