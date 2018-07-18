@@ -59,7 +59,7 @@ void FrameCallback()
     emulator.QueueAudio();
 }
 
-EM_BOOL KeyCallback(int eventType, const EmscriptenKeyboardEvent *e, void *userData)
+EM_BOOL KeyCallback(int eventType, const EmscriptenKeyboardEvent *e, void * /*userData*/)
 {
     if (eventType == EMSCRIPTEN_EVENT_KEYDOWN)
         emulator.HandleKey(e->keyCode, true);

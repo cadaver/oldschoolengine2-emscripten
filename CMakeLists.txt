@@ -7,7 +7,7 @@ add_definitions(-Wall -Wcast-qual -Wextra -Wshadow -fno-exceptions -fno-rtti -pe
 
 include_directories(src)
 
-file(GLOB_RECURSE sourceFiles ./src/*.cpp ./src/*.c)
+file(GLOB_RECURSE sourceFiles ./src/*.cpp)
 file(GLOB_RECURSE headerFiles ./src/*.h)
 
 set(CMAKE_EXECUTABLE_SUFFIX ".html")
