@@ -22,48 +22,10 @@
 
 #pragma once
 
-#include <map>
-#include <set>
-#include "DiskImage.h"
-
-class MOS6502;
-class RAM64K;
-class VIC2;
-class SID;
-
-class Emulator
+class Audio
 {
 public:
-    Emulator();
-    ~Emulator();
-
-    void Start();
-    void Update();
-    void QueueAudio();
-
-    void KernalTrap(unsigned short address);
-    unsigned char IORead(unsigned short address, bool& handled);
-    void IOWrite(unsigned short address);
-    void HandleKey(unsigned keyCode, bool down);
-
-private:
-    void InitMemory();
-    void BootGame();
-    void RunFrame();
-    void ExecuteLine(int lineNum, bool visible);
-    void UpdateLineCounterAndIRQ(int lineNum);
-    bool IsKeyDown(unsigned keyCode);
-
-    RAM64K* _ram;
-    MOS6502* _processor;
-    VIC2* _vic2;
-    SID* _sid;
-    DiskImage* _disk;
-    FileHandle _fileHandle;
-    std::vector<unsigned char> _fileName;
-    std::set<unsigned> _keysDown;
-    std::map<unsigned, unsigned char> _keyMappings;
-    int _lineCounter;
-    int _audioCycles;
-    unsigned char _keyMatrix[8];
+    static void Init(int numBuffers);
+    static int NumFreeBuffers();
+    static bool QueueBuffer(short* samples, int numSamples);
 };

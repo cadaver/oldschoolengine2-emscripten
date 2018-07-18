@@ -21,26 +21,27 @@
 // SOFTWARE.
 
 #include <stdlib.h>
-#include <emscripten.h>
 #include "Emulator.h"
 #include "Screen.h"
+#include "Audio.h"
 #include "MOS6502.h"
 #include "RAM64K.h"
 #include "VIC2.h"
+#include "SID.h"
 
 std::string diskImageName = "steelrangerdemo";
-
-const double frameTime = 1000.0 / 50.0;
 
 Emulator::Emulator() :
     _ram(nullptr),
     _processor(nullptr),
     _vic2(nullptr),
+    _sid(nullptr),
     _disk(nullptr)
 {
     _ram = new RAM64K(*this);
     _processor = new MOS6502(*_ram, *this);
     _vic2 = new VIC2(*_ram);
+    _sid = new SID(*_ram);
     for (int i = 0; i < 8; ++i)
         _keyMatrix[i] = 0xff;
 
@@ -56,29 +57,21 @@ Emulator::~Emulator()
     delete _processor;
     delete _ram;
     delete _vic2;
+    delete _sid;
 }
 
 void Emulator::Start()
 {
     Screen::Init();
+    Audio::Init(3);
     InitMemory();
     BootGame();
-    _lastTime = emscripten_get_now();
-    _timeAccumulator = 0.0;
 }
 
 void Emulator::Update()
 {
-    double currentTime = emscripten_get_now();
-    _timeAccumulator += (currentTime - _lastTime);
-    _lastTime = currentTime;
-
-    if (_timeAccumulator >= frameTime)
-    {
-        _timeAccumulator -= frameTime;
-        RunFrame();
-        Screen::Redraw(_vic2->Pixels());
-    }
+    RunFrame();
+    Screen::Redraw(_vic2->Pixels());
 }
 
 void Emulator::InitMemory()
@@ -123,6 +116,7 @@ void Emulator::BootGame()
 void Emulator::RunFrame()
 {
     const int frameCycles = CYCLES_PER_LINE * NUM_LINES;
+    _audioCycles = 0;
 
     _processor->SetCycles(0);
 
@@ -136,6 +130,26 @@ void Emulator::RunFrame()
 
     for (unsigned i = FIRST_INVISIBLE_LINE; i < NUM_LINES; ++i)
         ExecuteLine(i, false);
+
+    // Render rest of audio until end of frame
+    if (_audioCycles < frameCycles)
+    {
+        _sid->BufferSamples(frameCycles - _audioCycles);
+        _audioCycles = frameCycles;
+    }
+}
+
+void Emulator::QueueAudio()
+{
+    if (_sid->samples.size() > 0 && Audio::NumFreeBuffers() > 0)
+    {
+        int useSamples = _sid->samples.size();
+        // Buffer max. two frames at a time
+        if (useSamples > 2048)
+            useSamples = 2048;
+        Audio::QueueBuffer(&_sid->samples[0], useSamples);
+        _sid->samples.erase(_sid->samples.begin(), _sid->samples.begin() + useSamples);
+    }
 }
 
 void Emulator::ExecuteLine(int lineNum, bool visible)
@@ -167,8 +181,8 @@ void Emulator::IOWrite(unsigned short address)
     // Render audio up to the current point on each SID write
     if (address >= 0xd400 && address <= 0xd418)
     {
-        //_sid.BufferSamples(_processor.Cycles - _audioCycles);
-        //_audioCycles = _processor.Cycles;
+        _sid->BufferSamples(_processor->Cycles() - _audioCycles);
+        _audioCycles = _processor->Cycles();
     }
 }
 
