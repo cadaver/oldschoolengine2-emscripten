@@ -62,4 +62,6 @@ private:
     std::map<unsigned, unsigned char> _keyMappings;
     int _lineCounter;
     unsigned char _keyMatrix[8];
+    double _lastTime;
+    double _timeAccumulator;
 };

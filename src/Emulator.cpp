@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 #include <stdlib.h>
-
+#include <emscripten.h>
 #include "Emulator.h"
 #include "Screen.h"
 #include "MOS6502.h"
@@ -29,6 +29,8 @@
 #include "VIC2.h"
 
 std::string diskImageName = "steelrangerdemo";
+
+const double frameTime = 1000.0 / 50.0;
 
 Emulator::Emulator() :
     _ram(nullptr),
@@ -61,12 +63,22 @@ void Emulator::Start()
     Screen::Init();
     InitMemory();
     BootGame();
+    _lastTime = emscripten_get_now();
+    _timeAccumulator = 0.0;
 }
 
 void Emulator::Update()
 {
-    RunFrame();
-    Screen::Redraw(_vic2->Pixels());
+    double currentTime = emscripten_get_now();
+    _timeAccumulator += (currentTime - _lastTime);
+    _lastTime = currentTime;
+
+    if (_timeAccumulator >= frameTime)
+    {
+        _timeAccumulator -= frameTime;
+        RunFrame();
+        Screen::Redraw(_vic2->Pixels());
+    }
 }
 
 void Emulator::InitMemory()
