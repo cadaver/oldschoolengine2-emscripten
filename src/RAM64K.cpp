@@ -70,8 +70,6 @@ unsigned short RAM64K::Read16(unsigned short address)
     unsigned char a = Read(address);
     unsigned char b = Read(++address);
     return (unsigned short)((b << 8) | a);
-    // Let's keep things readable shall we
-    //return (unsigned short)((Read(++address) << 8) | Read(--address));
 }
 
 void RAM64K::Write(unsigned short address, unsigned char value)
@@ -92,7 +90,7 @@ void RAM64K::WriteIO(unsigned short address, unsigned char value)
     if (address >= 0xd000 && address < 0xe000)
     {
         // Hook before the value changes
-        _emulator.IOWrite(address);
+        _emulator.IOWrite(address, value);
         _ioRam[address - 0xd000] = value;
     }
     else

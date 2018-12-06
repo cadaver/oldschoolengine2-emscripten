@@ -42,7 +42,7 @@ public:
 
     void KernalTrap(unsigned short address);
     unsigned char IORead(unsigned short address, bool& handled);
-    void IOWrite(unsigned short address);
+    void IOWrite(unsigned short address, unsigned char value);
     void HandleKey(unsigned keyCode, bool down);
 
 private:
@@ -64,5 +64,8 @@ private:
     std::map<unsigned, unsigned char> _keyMappings;
     int _lineCounter;
     int _audioCycles;
+    int _timer;
+    bool _timerIRQEnable;
+    bool _timerIRQFlag;
     unsigned char _keyMatrix[8];
 };

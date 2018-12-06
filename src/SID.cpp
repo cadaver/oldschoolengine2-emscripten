@@ -50,7 +50,7 @@ void SIDChannel::Clock()
 {
     if ((waveform & 0x1) != 0)
     {
-        if (state ==Release)
+        if (state == Release)
             state = Attack;
     }
     else

@@ -12,7 +12,7 @@ Features:
 - Parts of SID emulation (noise, filter) based on jsSID by Mihaly Horvath
 - Emscripten build system & OpenGL initialization based on tiny_chess by Jukka Jylänki
 - Line-based VIC-II rendering
-- Raster interrupts. No actual CIA chip emulation
+- Raster interrupt + partial CIA1 Timer A emulation
 - Joystick port 2 control with arrows + ctrl as fire button
 - Keyboard input
 - D64 & D81 image support, loading / saving via minimal (and incorrect) Kernal routine traps

@@ -36,7 +36,10 @@ Emulator::Emulator(const std::string& imageName) :
     _processor(nullptr),
     _vic2(nullptr),
     _sid(nullptr),
-    _disk(nullptr)
+    _disk(nullptr),
+    _timer(0),
+    _timerIRQEnable(false),
+    _timerIRQFlag(false)
 {
     if (imageName.length())
         diskImageName = imageName;
@@ -206,21 +209,46 @@ void Emulator::ExecuteLine(int lineNum, bool visible)
 void Emulator::UpdateLineCounterAndIRQ(int lineNum)
 {
     _lineCounter = lineNum;
-    if ((_ram->ReadIO(0xd01a) & 0x1) > 0)
+    if ((_ram->ReadIO(0xd01a, false) & 0x1) > 0)
     {
         int targetLineNum = (_ram->ReadIO(0xd011, false) & 0x80) * 2 + _ram->ReadIO(0xd012, false);
         if (_lineCounter == targetLineNum)
             _processor->SetIRQ();
     }
+    if (_timer > 0 && (_ram->ReadIO(0xdc0e, false) & 0x1) > 0)
+    {
+        _timer -= CYCLES_PER_LINE;
+        if (_timer <= 0)
+        {
+            _timer = 0;
+            if (_timerIRQEnable)
+            {
+                _timerIRQFlag = true;
+                _processor->SetIRQ();
+            }
+        }
+    }
 }
 
-void Emulator::IOWrite(unsigned short address)
+void Emulator::IOWrite(unsigned short address, unsigned char value)
 {
     // Render audio up to the current point on each SID write
     if (address >= 0xd400 && address <= 0xd418)
     {
         _sid->BufferSamples(_processor->Cycles() - _audioCycles);
         _audioCycles = _processor->Cycles();
+    }
+    if (address == 0xdc0d)
+    {
+        if ((value & 0x81) == 0x81)
+            _timerIRQEnable = true;
+        if ((value & 0x81) == 0x1)
+            _timerIRQEnable = false;
+    }
+    if (address == 0xdc0e)
+    {
+        if ((value & 0x10) > 0)
+            _timer = _ram->ReadIO(0xdc04, false) | (_ram->ReadIO(0xdc05, false) << 8);
     }
 }
 
@@ -262,6 +290,19 @@ unsigned char Emulator::IORead(unsigned short address, bool& handled)
     {
         handled = true;
         return _lineCounter & 0xff;
+    }
+    else if (address == 0xdc0d)
+    {
+        handled = true;
+        unsigned char ret = 0x0;
+        if (_timerIRQEnable) 
+            ret |= 0x1;
+        if (_timerIRQFlag)
+        {
+            _timerIRQFlag = false;
+            ret |= 0x80;
+        }
+        return ret;
     }
     else
     {
