@@ -96,7 +96,7 @@ Emulator::Emulator(const std::string& imageName) :
     _keyMappings['Q'] = 62;
 
     Screen::Init();
-    Audio::Init(3);
+    Audio::Init(4);
     InitMemory();
     BootGame();
 }
@@ -182,14 +182,12 @@ void Emulator::RunFrame()
 
 void Emulator::QueueAudio()
 {
-    if (_sid->samples.size() > 0 && Audio::NumFreeBuffers() > 0)
+    unsigned frameSamples = 44100 / 50;
+
+    while (_sid->samples.size() > frameSamples && Audio::NumFreeBuffers() > 0)
     {
-        int useSamples = _sid->samples.size();
-        // Buffer max. two frames at a time
-        if (useSamples > 2048)
-            useSamples = 2048;
-        Audio::QueueBuffer(&_sid->samples[0], useSamples);
-        _sid->samples.erase(_sid->samples.begin(), _sid->samples.begin() + useSamples);
+        Audio::QueueBuffer(&_sid->samples[0], frameSamples);
+        _sid->samples.erase(_sid->samples.begin(), _sid->samples.begin() + frameSamples);
     }
 }
 

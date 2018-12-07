@@ -68,13 +68,16 @@ void FrameCallback()
     timeAccumulator += (currentTime - lastTime);
     lastTime = currentTime;
 
+    // Clamp time accumulator in case emulator was paused
+    if (timeAccumulator > 2 * frameTime)
+        timeAccumulator = 2 * frameTime;
+        
     if (timeAccumulator >= frameTime)
     {
         timeAccumulator -= frameTime;
         emulator->Update();
     }
-    
-    // Queue audio on all frames to avoid dropouts
+
     emulator->QueueAudio();
 }
 

@@ -79,7 +79,7 @@ void SIDChannel::Clock()
             if (adsrCounter == adsrTarget)
             {
                 adsrCounter = 0;
-                unsigned char adsrExpTarget = volumeLevel < 0x5d ? expTargetTable[volumeLevel] : (unsigned char)1;
+                unsigned char adsrExpTarget = volumeLevel < 0x5d ? expTargetTable[volumeLevel] : 1;
                 ++adsrExpCounter;
                 if (adsrExpCounter >= adsrExpTarget)
                 {
@@ -97,7 +97,7 @@ void SIDChannel::Clock()
                 adsrCounter = 0;
                 if (volumeLevel > 0)
                 {
-                    unsigned char adsrExpTarget = volumeLevel < 0x5d ? expTargetTable[volumeLevel] : (unsigned char)1;
+                    unsigned char adsrExpTarget = volumeLevel < 0x5d ? expTargetTable[volumeLevel] : 1;
                     ++adsrExpCounter;
                     if (adsrExpCounter >= adsrExpTarget)
                     {
@@ -220,12 +220,9 @@ SID::SID(RAM64K& ram) :
 void SID::BufferSamples(int cpuCycles)
 {
     // Adjust amount of cycles to render based on buffer fill
-    float multiplier = 1.f + (2048 - (int)samples.size()) / 16384.f;
-    if (cpuCycles <= CYCLES_PER_LINE && multiplier < 1.f)
-        multiplier = 1.f;
-    cpuCycles = (int)(multiplier * cpuCycles);
-
-    if (cpuCycles <= CYCLES_PER_LINE)
+    float multiplier = 1.f + (2048 - (int)samples.size()) / 8192.f;
+    // Let multiplier remain at 1 when we're executing the playroutine, to make sure ADSR behavior is accurate
+    if (cpuCycles <= CYCLES_PER_LINE*2)
         multiplier = 1.f;
     cpuCycles = (int)(multiplier * cpuCycles);
 
