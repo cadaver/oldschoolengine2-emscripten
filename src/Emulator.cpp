@@ -96,7 +96,7 @@ Emulator::Emulator(const std::string& imageName) :
     _keyMappings['Q'] = 62;
 
     Screen::Init();
-    Audio::Init(4);
+    Audio::Init(5);
     InitMemory();
     BootGame();
 }
