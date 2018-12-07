@@ -220,7 +220,7 @@ SID::SID(RAM64K& ram) :
 void SID::BufferSamples(int cpuCycles)
 {
     // Adjust amount of cycles to render based on buffer fill
-    float multiplier = 1.f + (2048 - (int)samples.size()) / 8192.f;
+    float multiplier = 1.f + (1764 - (int)samples.size()) / 8192.f;
     // Let multiplier remain at 1 when we're executing the playroutine, to make sure ADSR behavior is accurate
     if (cpuCycles <= CYCLES_PER_LINE*2)
         multiplier = 1.f;
