@@ -268,16 +268,13 @@ unsigned char Emulator::IORead(unsigned short address, bool& handled)
     else if (address == 0xdc01)
     {
         handled = true;
-        int matrixRow = -1;
+        unsigned char ret = 0xff;
         for (int i = 0; i < 8; ++i)
         {
             if ((_ram->ReadIO(0xdc00, false) & (1 << i)) == 0)
-            {
-                matrixRow = i;
-                break;
-            }
+                ret &= _keyMatrix[i];
         }
-        return matrixRow >= 0 ? _keyMatrix[matrixRow] : 0xff;
+        return ret;
     }
     else if (address == 0xd011)
     {
