@@ -140,6 +140,12 @@ void Emulator::BootGame()
         while (bootFile.IsOpen())
             _ram->WriteRAM(address++, _disk->ReadByte(bootFile));
 
+        // Set end address on zero page
+        _ram->WriteRAM(0x2d, address & 0xff);
+        _ram->WriteRAM(0x2e, address >> 8);
+        _ram->WriteRAM(0xae, address & 0xff);
+        _ram->WriteRAM(0xaf, address >> 8);
+
         // Set RESET vector to CLALL (autostart), otherwise assume sys2061
         if (loadAddress <= 0x32c)
         {
