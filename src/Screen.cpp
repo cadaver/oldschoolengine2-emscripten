@@ -1,6 +1,6 @@
 // MIT License
 // 
-// Copyright (c) 2018 Lasse Oorni
+// Copyright (c) 2018-2019 Lasse Oorni
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -96,7 +96,8 @@ void Screen::Init()
         "uniform sampler2D tex;"
         "varying vec2 uv;"
         "void main(){"
-            "gl_FragColor = fract(uv.y * 200.0) >= 0.5 ? texture2D(tex,uv) : texture2D(tex,uv) * 0.5;"
+            "float scanLine = clamp(sin((uv.y * 200.0 - 0.25) * 2.0 * 3.14) * 0.5 + 0.66, 0.1, 1.0);"
+            "gl_FragColor = scanLine * texture2D(tex,uv);"
         "}";
     GLuint fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
 

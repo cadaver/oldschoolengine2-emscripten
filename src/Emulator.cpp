@@ -1,6 +1,6 @@
 // MIT License
 // 
-// Copyright (c) 2018 Lasse Oorni
+// Copyright (c) 2018-2019 Lasse Oorni
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -286,6 +286,11 @@ unsigned char Emulator::IORead(unsigned short address, bool& handled)
         handled = true;
         return _lineCounter & 0xff;
     }
+    else if (address == 0xd030)
+    {
+        handled = true;
+        return 0xff;
+    }
     else if (address == 0xdc0d)
     {
         handled = true;
@@ -311,8 +316,16 @@ void Emulator::KernalTrap(unsigned short address)
     // SETNAM
     if (address == 0xffbd)
     {
-        _fileName.resize(_processor->A());
-        unsigned short fileNameAddress = (_processor->Y() * 256 + _processor->X());
+        // Strip away @0:
+        unsigned char fileNameLength = _processor->A();
+        unsigned short fileNameAddress = _processor->Y() * 256 + _processor->X();
+        if (_ram->ReadRAM(fileNameAddress) == 0x40 && _ram->ReadRAM(fileNameAddress + 1) == 0x30)
+        {
+            fileNameAddress += 3;
+            fileNameLength -= 3;
+        }
+
+        _fileName.resize(fileNameLength);
         for (unsigned i = 0; i < _fileName.size(); ++i)
             _fileName[i] = _ram->ReadRAM(fileNameAddress++);
     }
