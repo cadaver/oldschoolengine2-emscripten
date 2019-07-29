@@ -163,8 +163,8 @@ float SIDChannel::GetOutput()
         case 0x50:
             {
                 unsigned triangle = Triangle();
-                unsigned pulse = Pulse();
-                waveOutput = ((pulse & triangle & (triangle >> 1)) & (triangle << 1)) << 1;
+                unsigned square = Pulse();
+                waveOutput = ((square & triangle & (triangle >> 1)) & (triangle << 1)) << 1;
                 if (waveOutput > 0xffff)
                     waveOutput = 0xffff;
             }
@@ -172,8 +172,8 @@ float SIDChannel::GetOutput()
         case 0x60:
             {
                 unsigned saw = Sawtooth();
-                unsigned pulse = Pulse();
-                waveOutput = ((pulse & saw & (saw >> 1)) & (saw << 1)) << 1;
+                unsigned square = Pulse();
+                waveOutput = ((square & saw & (saw >> 1)) & (saw << 1)) << 1;
                 if (waveOutput > 0xffff)
                     waveOutput = 0xffff;
             }
@@ -181,8 +181,8 @@ float SIDChannel::GetOutput()
         case 0x70:
             {
                 unsigned triSaw = Triangle() & Sawtooth();
-                unsigned pulse = Pulse();
-                waveOutput = ((pulse & triSaw & (triSaw >> 1)) & (triSaw << 1)) << 1;
+                unsigned square = Pulse();
+                waveOutput = ((square & triSaw & (triSaw >> 1)) & (triSaw << 1)) << 1;
                 if (waveOutput > 0xffff)
                     waveOutput = 0xffff;
             }
