@@ -322,6 +322,7 @@ void VIC2::RenderNextLine()
     unsigned char spriteFlags = _ram.ReadIO(0xd015);
     unsigned char spriteMCFlags = _ram.ReadIO(0xd01c);
     unsigned char spriteXMSBFlags = _ram.ReadIO(0xd010);
+    unsigned char spriteXExpandFlags = _ram.ReadIO(0xd01d);
 
     unsigned sprMc1 = _palette[_ram.ReadIO(0xd025) & 0xf];
     unsigned sprMc2 = _palette[_ram.ReadIO(0xd026) & 0xf];
@@ -340,46 +341,51 @@ void VIC2::RenderNextLine()
 
         if (_spriteActive[i])
         {
-            // TODO: expansion, background priority
+            // TODO: Y expansion, background priority
             if (renderSprites)
             {
                 int startX = _ram.ReadIO((0xd000 + i * 2));
                 if ((spriteXMSBFlags & bitValues[i]) != 0)
                     startX += 256;
+                bool xExpand = (spriteXExpandFlags & bitValues[i]) != 0;
+                if (xExpand && startX >= 480 && startX < 504)
+                    startX -= 504;
 
                 unsigned short spriteData = (videoBank + _ram.ReadRAM((screenAddress + 0x3f8 + i)) * 0x40 + _spriteRow[i] * 3);
                 unsigned spriteColor = _palette[_ram.ReadIO((0xd027 + i)) & 0xf];
 
                 for (int j = 0; j < 24; ++j)
                 {
-                    int k = startX + j - 24;
-                    if (k < 0 || k >= 320 || (hBorders && (k < 7 || k >= 311)))
-                        continue;
-
+                    int k = xExpand ? (startX + j * 2 - 24) : (startX + j - 24);
                     unsigned char spriteByte = _ram.ReadRAM((spriteData + (j >> 3)));
-                    if (spriteByte != 0)
+
+                    for (int l = 0; l < (xExpand ? 2 : 1); ++l)
                     {
-                        if ((spriteMCFlags & bitValues[i]) != 0)
+                        if (k >= 0 && k <= 320 && (!hBorders || (k >= 7 && k < 311)) && spriteByte != 0)
                         {
-                            unsigned char bitPair = (unsigned char)((spriteByte >> (6 - (j & 0x6))) & 0x3);
-                            switch (bitPair)
+                            if ((spriteMCFlags & bitValues[i]) != 0)
                             {
-                                case 1:
-                                    _pixels[pixelStart + k] = sprMc1;
-                                    break;
-                                case 2:
+                                unsigned char bitPair = ((spriteByte >> (6 - (j & 0x6))) & 0x3);
+                                switch (bitPair)
+                                {
+                                    case 1:
+                                        _pixels[pixelStart + k] = sprMc1;
+                                        break;
+                                    case 2:
+                                        _pixels[pixelStart + k] = spriteColor;
+                                        break;
+                                    case 3:
+                                        _pixels[pixelStart + k] = sprMc2;
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                if ((spriteByte & bitValues[7 - (j & 0x7)]) != 0)
                                     _pixels[pixelStart + k] = spriteColor;
-                                    break;
-                                case 3:
-                                    _pixels[pixelStart + k] = sprMc2;
-                                    break;
                             }
                         }
-                        else
-                        {
-                            if ((spriteByte & bitValues[7 - (j & 0x7)]) != 0)
-                                _pixels[pixelStart + k] = spriteColor;
-                        }
+                        ++k;
                     }
                 }
             }
