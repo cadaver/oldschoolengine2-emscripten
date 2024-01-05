@@ -1,17 +1,17 @@
 ﻿// MIT License
-// 
-// Copyright (c) 2018-2019 Lasse Oorni
-// 
+//
+// Copyright (c) 2018-2024 Lasse Oorni
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -31,6 +31,8 @@
 #include "VIC2.h"
 #include "RAM64K.h"
 
+#define min(a,b) ((a)<(b)?(a):(b))
+
 unsigned short adsrRateTable[] = { 9, 32, 63, 95, 149, 220, 267, 313, 392, 977, 1954, 3126, 3907, 11720, 19532, 31251 };
 unsigned char sustainLevels[] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
 unsigned char expTargetTable[] = { 1,30,30,30,30,30,16,16,16,16,16,16,16,16,8,8,8,8,8,8,8,8,8,8,8,8,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
@@ -46,7 +48,7 @@ SIDChannel::SIDChannel() :
 {
 }
 
-void SIDChannel::Clock()
+void SIDChannel::Clock(int cycles)
 {
     if ((waveform & 0x1) != 0)
     {
@@ -56,85 +58,131 @@ void SIDChannel::Clock()
     else
         state = Release;
 
-    ++adsrCounter;
-    adsrCounter &= 0x7fff;
-    unsigned short adsrTarget = 9;
+    int adsrCycles = cycles;
 
-    switch (state)
+    while (adsrCycles > 0)
     {
-        case Attack:
-            adsrTarget = adsrRateTable[ad >> 4];
-            if (adsrCounter == adsrTarget)
-            {
-                adsrCounter = 0;
-                adsrExpCounter = 0;
-                ++volumeLevel;
-                if (volumeLevel == 0xff)
-                    state = Decay;
-            }
-            break;
+        // Calculate how long can run until ADSR counter reaches target
+        unsigned short adsrTarget = (state == Attack) ? adsrRateTable[ad >> 4] : ((state == Decay) ? adsrRateTable[ad & 0xf] : adsrRateTable[sr & 0xf]);
+        int adsrCyclesNow = min(adsrCycles, adsrCounter < adsrTarget ? adsrTarget - adsrCounter : 0x8000 + adsrTarget - adsrCounter);
 
-        case Decay:
-            adsrTarget = adsrRateTable[ad & 0xf];
-            if (adsrCounter == adsrTarget)
-            {
-                adsrCounter = 0;
-                unsigned char adsrExpTarget = volumeLevel < 0x5d ? expTargetTable[volumeLevel] : 1;
-                ++adsrExpCounter;
-                if (adsrExpCounter >= adsrExpTarget)
+        adsrCounter += adsrCyclesNow;
+        adsrCounter &= 0x7fff;
+
+        switch (state)
+        {
+            case Attack:
+                if (adsrCounter == adsrTarget)
                 {
+                    adsrCounter = 0;
                     adsrExpCounter = 0;
-                    if (volumeLevel > sustainLevels[sr >> 4])
-                        --volumeLevel;
+                    ++volumeLevel;
+                    if (volumeLevel == 0xff)
+                        state = Decay;
                 }
-            }
-            break;
+                break;
 
-        case Release:
-            adsrTarget = adsrRateTable[sr & 0xf];
-            if (adsrCounter == adsrTarget)
-            {
-                adsrCounter = 0;
-                if (volumeLevel > 0)
+            case Decay:
+                if (adsrCounter == adsrTarget)
                 {
+                    adsrCounter = 0;
                     unsigned char adsrExpTarget = volumeLevel < 0x5d ? expTargetTable[volumeLevel] : 1;
                     ++adsrExpCounter;
                     if (adsrExpCounter >= adsrExpTarget)
                     {
                         adsrExpCounter = 0;
-                        --volumeLevel;
+                        if (volumeLevel > sustainLevels[sr >> 4])
+                            --volumeLevel;
                     }
                 }
-            }
-            break;
+                break;
+
+            case Release:
+                if (adsrCounter == adsrTarget)
+                {
+                    adsrCounter = 0;
+                    if (volumeLevel > 0)
+                    {
+                        unsigned char adsrExpTarget = volumeLevel < 0x5d ? expTargetTable[volumeLevel] : 1;
+                        ++adsrExpCounter;
+                        if (adsrExpCounter >= adsrExpTarget)
+                        {
+                            adsrExpCounter = 0;
+                            --volumeLevel;
+                        }
+                    }
+                }
+                break;
+        }
+
+        adsrCycles -= adsrCyclesNow;
     }
 
-    unsigned lastAccumulator = accumulator;
-
-    accumulator += frequency;
-    accumulator &= 0xffffff;
-
+    // Testbit
     if ((waveform & 0x8) != 0)
     {
         accumulator = 0;
-        noiseGenerator = 0x7ffff8;
+        // Hack for testbit noise sounding mechanical under this crude emulation
+        //noiseGenerator = 0x7ffff8;
+        return;
     }
 
-    // Optimization: run noise generator only when necessary
-    if ((waveform & 0x80) != 0)
+    // If frequency 0, no-op
+    if (frequency == 0)
+        return;
+
+    // If no noise and no sync target, can use fast clocking
+    if ((waveform & 0x80) == 0 && (syncTarget->waveform & 0x2) == 0)
     {
-        if ((lastAccumulator & 0x80000) == 0 && (accumulator & 0x80000) != 0)
+        accumulator += frequency * cycles;
+        accumulator &= 0xffffff;
+    }
+    else
+    {
+        // Else calculate how long until next noise generator step or sync
+        int accumulatorCycles = cycles;
+
+        while (accumulatorCycles > 0)
         {
-            unsigned temp = noiseGenerator;
-            unsigned step = (temp & 0x400000) ^ ((temp & 0x20000) << 5);
-            temp <<= 1;
-            if (step > 0)
-                temp |= 1;
-            noiseGenerator = temp & 0x7fffff;
+            int accumulatorCyclesNow = accumulatorCycles;
+
+            if ((waveform & 0x80) != 0)
+            {
+                if ((accumulator & 0xfffff) < 0x80000)
+                    accumulatorCyclesNow = min(accumulatorCyclesNow, (int)(0x80000 - (accumulator & 0xfffff)) / frequency + 1);
+                else
+                    accumulatorCyclesNow = min(accumulatorCyclesNow, (int)(0x180000 - (accumulator & 0xfffff)) / frequency + 1);
+            }
+
+            if ((syncTarget->waveform & 0x2) != 0)
+            {
+                if (accumulator < 0x800000)
+                    accumulatorCyclesNow = min(accumulatorCyclesNow, (int)(0x800000 - accumulator) / frequency + 1);
+                else
+                    accumulatorCyclesNow = min(accumulatorCyclesNow, (int)(0x1800000 - accumulator) / frequency + 1);
+            }
+
+            unsigned lastAccumulator = accumulator;
+
+            accumulator += frequency * accumulatorCyclesNow;
+            accumulator &= 0xffffff;
+
+            if ((waveform & 0x80) != 0 && (lastAccumulator & 0x80000) == 0 && (accumulator & 0x80000) != 0)
+            {
+                unsigned temp = noiseGenerator;
+                unsigned step = (temp & 0x400000) ^ ((temp & 0x20000) << 5);
+                temp <<= 1;
+                if (step > 0)
+                    temp |= 1;
+                noiseGenerator = temp & 0x7fffff;
+            }
+
+            // Sync
+            doSync = ((lastAccumulator & 0x800000) == 0 && (accumulator & 0x800000) != 0);
+
+            accumulatorCycles -= accumulatorCyclesNow;
         }
     }
-
-    doSync = ((lastAccumulator & 0x800000) == 0 && (accumulator & 0x800000) != 0);
 }
 
 void SIDChannel::ResetAccumulator()
@@ -263,23 +311,24 @@ void SID::BufferSamples(int cpuCycles)
 
     // Filter cutoff & resonance
     // Adjusted to be slightly darker than jsSID
-    float cutoff = _ram.ReadIO(0xd416) + 0.2f;
-    cutoff = 1.f - 1.463f * exp(cutoff * _cutoffRatio);
-    if (cutoff < 0.035f)
-        cutoff = 0.035f;
-    float resonance = (filterCtrl > 0x5f) ? 8.f / (filterCtrl >> 4) : 1.41f;
+    float cutoff = 0.05f + 0.85f * (sinf((_ram.ReadIO(0xd416) / 255.0f - 0.5f) * M_PI) * 0.5f + 0.5f);
+    cutoff = powf(cutoff, 1.3f);
+    float resonance = (_ram.ReadIO(0xd417) > 0x3f) ? 7.0f / (_ram.ReadIO(0xd417) >> 4) : 1.75f;
 
-    for (int i = 0; i < cpuCycles; ++i)
+    while (cpuCycles > 0)
     {
+        int cyclesToRun = min(cpuCycles, (int)ceilf(_cyclesPerSample - _cycleAccumulator));
+
         for (int j = 0; j < 3; ++j)
-            _channels[j].Clock();
+            _channels[j].Clock(cyclesToRun);
         for (int j = 0; j < 3; ++j)
         {
             if (_channels[j].doSync && (_channels[j].syncTarget->waveform & 0x2) != 0)
                 _channels[j].syncTarget->ResetAccumulator();
         }
     
-        ++_cycleAccumulator;
+        _cycleAccumulator += cyclesToRun;
+
         if (_cycleAccumulator >= _cyclesPerSample)
         {
             _cycleAccumulator -= _cyclesPerSample;
@@ -324,5 +373,7 @@ void SID::BufferSamples(int cpuCycles)
                 output = 1.f;
             samples.push_back((short)(output * 32767));
         }
+        
+        cpuCycles -= cyclesToRun;
     }
 }
