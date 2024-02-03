@@ -69,12 +69,14 @@ void SIDChannel::Clock(int cycles)
         adsrCounter += adsrCyclesNow;
         adsrCounter &= 0x7fff;
 
-        switch (state)
+        if (adsrCounter == adsrTarget)
         {
+            adsrCounter = 0;
+            
+            switch (state)
+            {
             case Attack:
-                if (adsrCounter == adsrTarget)
                 {
-                    adsrCounter = 0;
                     adsrExpCounter = 0;
                     ++volumeLevel;
                     if (volumeLevel == 0xff)
@@ -83,9 +85,7 @@ void SIDChannel::Clock(int cycles)
                 break;
 
             case Decay:
-                if (adsrCounter == adsrTarget)
                 {
-                    adsrCounter = 0;
                     unsigned char adsrExpTarget = volumeLevel < 0x5d ? expTargetTable[volumeLevel] : 1;
                     ++adsrExpCounter;
                     if (adsrExpCounter >= adsrExpTarget)
@@ -98,9 +98,7 @@ void SIDChannel::Clock(int cycles)
                 break;
 
             case Release:
-                if (adsrCounter == adsrTarget)
                 {
-                    adsrCounter = 0;
                     if (volumeLevel > 0)
                     {
                         unsigned char adsrExpTarget = volumeLevel < 0x5d ? expTargetTable[volumeLevel] : 1;
@@ -113,6 +111,7 @@ void SIDChannel::Clock(int cycles)
                     }
                 }
                 break;
+            }
         }
 
         adsrCycles -= adsrCyclesNow;
