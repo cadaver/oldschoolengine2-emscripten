@@ -78,7 +78,7 @@ void Screen::Init()
     EmscriptenWebGLContextAttributes attrs;
     emscripten_webgl_init_context_attributes(&attrs);
     attrs.alpha = 0;
-    glContext = emscripten_webgl_create_context(0, &attrs);
+    glContext = emscripten_webgl_create_context("canvas", &attrs);
     emscripten_webgl_make_context_current(glContext);
 
     static const char vertexShader[] =

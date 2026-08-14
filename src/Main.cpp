@@ -57,8 +57,8 @@ int main(int argc, char** argv)
     emulator = new Emulator(diskImageName);
     
     emscripten_set_main_loop(FrameCallback, 0, 0);
-    emscripten_set_keydown_callback(0, 0, 1, KeyCallback);
-    emscripten_set_keyup_callback(0, 0, 1, KeyCallback);
+    emscripten_set_keydown_callback("canvas", 0, 1, KeyCallback);
+    emscripten_set_keyup_callback("canvas", 0, 1, KeyCallback);
     lastTime = emscripten_get_now();
 }
 
