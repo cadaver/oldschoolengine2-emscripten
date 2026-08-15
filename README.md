@@ -28,10 +28,11 @@ Licensed under the MIT license, see the code for details. Use at own risk.
 
 To build, the Emscripten SDK and CMake are needed. Ensure the EMSDK environment is set up correctly in your shell and type (for a release build, change as needed):
 
-`emcmake cmake . -DCMAKE_BUILD_TYPE=Release`
+    emcmake cmake . -DCMAKE_BUILD_TYPE=Release
+    make
 
 ## Startup options
 
 The emulator allows a diskimage query parameter. By default the Steel Ranger demo (included) is run, but to run Hessian instead, assuming a localhost page over http:
 
-`http://127.0.0.1:yourport/oldschoolengine2.html?diskimage=hessian`
+    http://127.0.0.1:yourport/oldschoolengine2.html?diskimage=hessian
